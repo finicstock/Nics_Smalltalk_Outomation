@@ -28,7 +28,7 @@ def get_market_data():
     for name, sym in tickers.items():
         try:
             t = yf.Ticker(sym)
-            hist = t.history(period="2d")
+            hist = t.history(period="5d")
             
             if len(hist) < 2:
                 price = t.fast_info.last_price
