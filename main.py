@@ -8,12 +8,15 @@ TOKEN = os.environ['TELEGRAM_TOKEN']
 CHAT_ID = os.environ['CHAT_ID']
 
 def get_market_data():
-    # 기호 설정: 미국10년금리, 달러지수, S&P500, 나스닥
+    # 요청하신 6가지 항목 설정
     tickers = {
-        "💵 달러지수": "DX-Y.NYB", 
-        "📈 미 10년물 금리": "^TNX", 
-        "🏛 S&P 500": "^GSPC", 
-        "🚀 나스닥": "^IXIC"
+        "📊 나스닥 선물": "NQ=F",
+        "📊 S&P500 선물": "ES=F",
+        "📊 다우 선물": "YM=F",
+        "🇺🇸 미 채권 2년물": "^ZT",
+        "🇺🇸 미 채권 10년물": "^TNX",
+        "💵 달러지수": "DX-Y.NYB",
+        "🇰🇷 달러/원 환율": "USDKRW=X"
     }
     
     today_str = datetime.now().strftime('%Y-%m-%d')
@@ -22,11 +25,9 @@ def get_market_data():
     for name, sym in tickers.items():
         try:
             t = yf.Ticker(sym)
-            # 최근 2일치 데이터를 가져와서 전일 대비 계산
             hist = t.history(period="2d")
             
             if len(hist) < 2:
-                # 데이터가 부족할 경우 현재가만 표시
                 price = t.fast_info.last_price
                 results += f"\n{name}: {price:.2f}"
                 continue
@@ -36,14 +37,14 @@ def get_market_data():
             change = current_price - prev_price
             change_pct = (change / prev_price) * 100
             
-            # 상승/하락 이모지 결정
             emoji = "🔺" if change > 0 else "🔻"
             
-            results += f"\n{name}: {current_price:.2f} ({emoji} {abs(change_pct):.2f}%)"
+            # 환율이나 금리는 소수점 2자리, 지수는 숫자가 크니 포맷 유지
+            results += f"\n{name}: {current_price:,.2f} ({emoji} {abs(change_pct):.2f}%)"
         except Exception as e:
             results += f"\n{name}: 데이터 오류"
             
-    results += "\n\n#미국증시 #자동업데이트"
+    results += "\n\n#미국증시 #주요지수 #환율 #채권금리"
     return results
 
 def send_to_channel(text):
