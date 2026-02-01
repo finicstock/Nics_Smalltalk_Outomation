@@ -20,8 +20,7 @@ def get_ai_memory_data():
         msg = f"🤖 {today_str} AI/서버 메모리 시황\n"
         found_data = False
 
-        # 닉스님이 올려주신 이미지의 표 순서와 사양에 맞게 정밀 타겟팅
-        # (이름, 검색 키워드)
+        # 1. 개별 품목 타겟팅 (정밀 매칭)
         targets = [
             ("DDR5 16Gb", "DDR5 16Gb.*?\d+/\d+"),
             ("DDR4 16Gb", "DDR4 16Gb.*?3200"),
@@ -29,33 +28,22 @@ def get_ai_memory_data():
         ]
         
         for name, keyword in targets:
-            # 패턴 설명: 품목명...세션평균...세션변동률 순서로 추출
-            # 이미지상의 'Session Average'와 'Session Change' 값을 타겟팅합니다.
             pattern = re.compile(rf"{keyword}.*?(\d+\.\d+).*?(\d+\.\d+).*?(\d+\.\d+).*?(\d+\.\d+).*?(\d+\.\d+).*?([+-]?\d+\.\d+)\s*%", re.IGNORECASE | re.DOTALL)
             match = pattern.search(content)
             
             if match:
-                price = match.group(5)  # Session Average 값
-                change = match.group(6) # Session Change (%) 값
-                
+                price = match.group(5)  # Session Average
+                change = match.group(6) # Session Change
                 emoji = "🔺" if float(change) > 0 else ("⬇️" if float(change) < 0 else "🔹")
                 msg += f"\n🔸 {name}: ${price} ({emoji}{change}%)"
                 found_data = True
 
-        if not found_data:
-            return "⚠️ 타겟 품목 데이터를 찾지 못했습니다. 사이트 구조를 확인해주세요."
-            
-        msg += "\n\n#DRAM #HBM #반도체시황"
-        return msg
-
-    except Exception as e:
-        return f"❌ 실행 에러: {str(e)}"
-
-def send_to_channel(text):
-    if not TOKEN or not CHAT_ID: return
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": CHAT_ID, "text": text})
-
-if __name__ == "__main__":
-    result = get_ai_memory_data()
-    send_to_channel(result)
+        # 2. DXI 지수 추가 추출
+        # DXI는 보통 숫자가 크고(예: 25,000점) 뒤에 등락률이 붙습니다.
+        dxi_pattern = re.compile(r"DXI.*?(\d{1,3}(?:,\d{3})*(?:\.\d+)?).*?([+-]?\d+\.\d+)\s*%", re.IGNORECASE | re.DOTALL)
+        dxi_match = dxi_pattern.search(content)
+        
+        if dxi_match:
+            dxi_val = dxi_match.group(1)
+            dxi_change = dxi_match.group(2)
+            dxi_emoji = "🔺" if float(dxi_change) > 0 else ("⬇️" if float(dxi_change)
